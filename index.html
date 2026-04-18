@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Volunteer Coordinator</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      text-align: center;
+      padding: 30px;
+    }
+
+    textarea {
+      width: 80%;
+      height: 120px;
+      padding: 10px;
+      margin: 10px;
+    }
+
+    button {
+      padding: 12px 25px;
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .output {
+      background: white;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 8px;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>🤖 AI Volunteer Coordinator</h2>
+
+<textarea id="task" placeholder="Enter NGO task here..."></textarea><br>
+
+<button onclick="analyze()">Analyze Task</button>
+
+<div class="output" id="output">Result will appear here...</div>
+
+<script>
+async function analyze() {
+  let task = document.getElementById("task").value;
+
+  if (!task) {
+    document.getElementById("output").innerText = "Please enter a task!";
+    return;
+  }
+
+  try {
+    let response = await fetch("/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ task: task })
+    });
+
+    let data = await response.json();
+
+    if (data.error) {
+      document.getElementById("output").innerText = data.error;
+    } else {
+      document.getElementById("output").innerText = data.result;
+    }
+
+  } catch (error) {
+    document.getElementById("output").innerText = "Error connecting to server!";
+    console.error(error);
+  }
+}
+</script>
+
+</body>
+</html>
