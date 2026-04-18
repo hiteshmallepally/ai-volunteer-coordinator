@@ -4,14 +4,12 @@ import os
 
 app = Flask(__name__)
 
-# 🔐 Get API key safely from environment
+# 🔐 Get API key (safe, no crash)
 api_key = os.getenv("GEMINI_API_KEY")
 
-if not api_key:
-    raise ValueError("❌ GEMINI_API_KEY not set in environment variables")
-
-# ✅ Initialize Gemini client
-client = genai.Client(api_key=api_key)
+client = None
+if api_key:
+    client = genai.Client(api_key=api_key)
 
 # 📁 Load HTML
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,20 +47,23 @@ Task: {task}
 """
 
         try:
-            # 🤖 Try AI response
-            response = client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=prompt
-            )
+            # 🤖 Try AI only if client exists
+            if client:
+                response = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=prompt
+                )
 
-            result = response.text if hasattr(response, "text") else str(response)
+                result = response.text if hasattr(response, "text") else str(response)
+                return jsonify({"result": result})
 
-            return jsonify({"result": result})
+            else:
+                raise Exception("API key not available")
 
         except Exception as ai_error:
             print("AI FAILED:", ai_error)
 
-            # 🔥 Fallback response (ensures app never breaks)
+            # 🔥 Fallback (always works)
             fallback_result = f"""
 Priority: High
 
@@ -78,7 +79,6 @@ Suggestions:
 - Use local coordination
 - Track progress regularly
 """
-
             return jsonify({"result": fallback_result})
 
     except Exception as e:
