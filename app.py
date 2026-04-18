@@ -4,8 +4,14 @@ import os
 
 app = Flask(__name__)
 
-# 🔑 API key (keep yours here for now)
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+# 🔐 Get API key safely from environment
+api_key = os.getenv("GEMINI_API_KEY")
+
+if not api_key:
+    raise ValueError("❌ GEMINI_API_KEY not set in environment variables")
+
+# ✅ Initialize Gemini client
+client = genai.Client(api_key=api_key)
 
 # 📁 Load HTML
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,11 +37,7 @@ def analyze():
         if not task:
             return jsonify({"error": "Task cannot be empty"}), 400
 
-        # 🧠 TRY AI FIRST
-        try:
-            response = client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=f"""
+        prompt = f"""
 Analyze this NGO task and provide:
 
 Priority:
@@ -45,15 +47,23 @@ Suggestions:
 
 Task: {task}
 """
+
+        try:
+            # 🤖 Try AI response
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt
             )
 
-            return jsonify({"result": response.text})
+            result = response.text if hasattr(response, "text") else str(response)
+
+            return jsonify({"result": result})
 
         except Exception as ai_error:
             print("AI FAILED:", ai_error)
 
-            # 🔥 FALLBACK (always works)
-            result = f"""
+            # 🔥 Fallback response (ensures app never breaks)
+            fallback_result = f"""
 Priority: High
 
 Volunteers Needed: 20-30
@@ -68,7 +78,8 @@ Suggestions:
 - Use local coordination
 - Track progress regularly
 """
-            return jsonify({"result": result})
+
+            return jsonify({"result": fallback_result})
 
     except Exception as e:
         print("ERROR:", e)
