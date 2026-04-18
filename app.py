@@ -11,7 +11,7 @@ client = None
 if api_key:
     client = genai.Client(api_key=api_key)
 
-# ✅ Inline HTML (fixes Render crash)
+# ✅ Inline HTML (safe for Render)
 html = """
 <!DOCTYPE html>
 <html>
@@ -76,11 +76,9 @@ async function analyze() {
 </html>
 """
 
-
 @app.route("/")
 def home():
     return render_template_string(html)
-
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
@@ -103,35 +101,43 @@ Task: {task}
 """
 
         try:
+            # 🤖 Try AI (correct model)
             if client:
                 response = client.models.generate_content(
-                    model="gemini-2.0-flash",
+                    model="gemini-1.5-flash-latest",
                     contents=prompt
                 )
+
                 result = response.text if hasattr(response, "text") else str(response)
                 return jsonify({"result": result})
 
             else:
-                raise Exception("No API key")
+                raise Exception("API key not available")
 
         except Exception as ai_error:
             print("AI FAILED:", ai_error)
 
-            # 🔥 Fallback
-            fallback = """
-Priority: High
+            # 🔥 Smart fallback (dynamic)
+            task_lower = task.lower()
 
-Volunteers Needed: 20-30
+            priority = "High" if any(x in task_lower for x in ["flood", "earthquake", "cyclone", "disaster"]) else "Medium"
+            volunteers = "20-30" if priority == "High" else "10-15"
+
+            fallback = f"""
+Priority: {priority}
+
+Volunteers Needed: {volunteers}
 
 Action Plan:
-1. Assign volunteers to rescue teams
-2. Organize food distribution
-3. Arrange medical support
+1. Analyze the situation: {task}
+2. Assign volunteers based on required activities
+3. Coordinate tasks efficiently
+4. Monitor progress
 
 Suggestions:
-- Divide tasks efficiently
-- Use local coordination
-- Track progress regularly
+- Customize actions based on task type
+- Improve coordination among volunteers
+- Ensure proper resource allocation
 """
             return jsonify({"result": fallback})
 
