@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # 🔑 API key (keep yours here for now)
-client = genai.Client(api_key="AIzaSyAxMhJObvy7xodhhwIRD1lwxLMCHrsCLAE")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # 📁 Load HTML
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
